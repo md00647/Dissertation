@@ -161,7 +161,7 @@ server <- function(input, output,session) {
   })
   
   key_data_wide <- reactive({
-    pivot_wider(key_data(), names_from = "Dataset", values_from = c("Z-Score", "EA", "NEA")) 
+    pivot_wider(key_data(), names_from = "Dataset", values_from = c("Z-Score", "EA", "NEA", "Gene")) 
   })
   
   all <- reactive({
@@ -171,17 +171,17 @@ server <- function(input, output,session) {
   # Allele Alignment 
   # If key dataset Z-Scores are negative, flip the alleles and the sign of the Z-Score to make it positive
   data_align <- reactive({ all() %>% 
-              mutate(NewZ = ifelse((.[[6]] < 0) == TRUE,  .[[6]]*-1, .[[6]]),
-                     NewEA = ifelse((.[[6]] < 0) == TRUE,  .[[8]], .[[7]]),
-                     NewNEA = ifelse((.[[6]] < 0) == TRUE,  .[[7]], .[[8]])
+              mutate(NewZ = ifelse((.[[7]] < 0) == TRUE,  .[[7]]*-1, .[[7]]),
+                     NewEA = ifelse((.[[7]] < 0) == TRUE,  .[[9]], .[[8]]),
+                     NewNEA = ifelse((.[[7]] < 0) == TRUE,  .[[8]], .[[9]])
            )
         })
   
   
   # Replace the original Z-Score, EA and NEA column values for key datasets with the newly generated ones 
   align_rename <- reactive({
-     data_align() %>% replace(6, data_align()$NewZ) %>% replace(7, data_align()$NewEA) %>% replace(8, data_align()$NewNEA) %>% 
-      select(-c(9, 10, 11))
+     data_align() %>% replace(7, data_align()$NewZ) %>% replace(8, data_align()$NewEA) %>% replace(9, data_align()$NewNEA) %>% 
+      select(-c(11, 12, 13))
   })
   
   # Filter the dataset to not include the key dataset so you do not compare it against itself
@@ -209,28 +209,29 @@ server <- function(input, output,session) {
   # If they are the same, return the original Z.Score, otherwise change value to NA
   Z_Upd <- reactive({ all_mutate() %>%
       dplyr::mutate(`Z.Score.Updated` =
-                      ifelse(all_mutate()$EA == all_mutate()[,7] &  all_mutate()$NEA ==  all_mutate()[,8],  all_mutate()$`Z.Score`, "NA"))
+                      ifelse(all_mutate()$EA == all_mutate()[,8] &  all_mutate()$NEA ==  all_mutate()[,9],  all_mutate()$`Z.Score`, "NA"))
   })
   
   # If NEA=EA of comparison dataset and EA=NEA of comparison dataset, then multiple the Z-Score by -1, otherwise assign it to NA, as before
   Z_Upd2 <- reactive({ Z_Upd() %>%
       dplyr::mutate(`Z.Score.Updated2` =
-                      ifelse(Z_Upd()$NEA == Z_Upd()[,7] & Z_Upd()$EA == Z_Upd()[,8], Z_Upd()$`Z.Score`*-1, Z_Upd()$`Z.Score.Updated`)
+                      ifelse(Z_Upd()$NEA == Z_Upd()[,8] & Z_Upd()$EA == Z_Upd()[,9], Z_Upd()$`Z.Score`*-1, Z_Upd()$`Z.Score.Updated`)
       )  
   })
   
   # Modify columns: EA and NEA become the values of the key dataset 
   all_final <- reactive({
     Z_Upd2() %>%
-      select(-c(2, 3, 5, 6, 9)) %>% dplyr::rename(`Z-Score` = `Z.Score.Updated2`, 
+      select(-c(2, 3, 5, 6, 7, 11)) %>% dplyr::rename(`Z-Score` = `Z.Score.Updated2`, 
                                                   `EA` = 3,
-                                                  `NEA` = 4)
+                                                  `NEA` = 4,
+                                                  `Gene` = 5)
   })
   
   # Key dataset 
   all_key <- reactive({
     align_rename() %>% 
-      select(1, 6, 7, 8) %>% 
+      select(1, 7, 8, 9, 10) %>% 
       unique() %>% 
       mutate(Dataset = input$data_in) 
   }) 
@@ -239,7 +240,8 @@ server <- function(input, output,session) {
    key_rename <- reactive({
      all_key() %>% dplyr::rename(`Z-Score` = 2,
                                `EA` = 3,
-                               `NEA` = 4)
+                               `NEA` = 4,
+                               `Gene` = 5)
    })
    
   # Create final dataset, merging the key dataset and comparison dataset dataframes which contain the updated Z-scores and alleles of key dataset
@@ -249,8 +251,8 @@ server <- function(input, output,session) {
   
   # Reshape so all of the Z-Scores are along the top row
   output_z <- reactive({
-    reshape(total(), idvar=c("SNP", "EA", "NEA"), timevar = "Dataset", direction="wide") %>%
-      relocate(paste("Z-Score.",input$data_in, sep = ""), .after = "NEA")
+    reshape(total(), idvar=c("SNP", "EA", "NEA", "Gene"), timevar = "Dataset", direction="wide") %>%
+      relocate(paste("Z-Score.",input$data_in, sep = ""), .after = "Gene")
   }) 
   
   ### REMOVE ROWS ### ------------------------------------------------------------------------------------------------------------------------
@@ -307,14 +309,14 @@ server <- function(input, output,session) {
   # Make the id column the rownames
   all_complete_id <- reactive({
     id_col <- all_complete() %>%
-      dplyr::mutate(id = paste0(all_complete()$SNP,"_",all_complete()$EA,"/",all_complete()$NEA))
+      dplyr::mutate(id = paste0(all_complete()$SNP,"_",all_complete()$Gene))
     rownames(id_col) = id_col$id
     id_col
   })
   
   # Remove the SNP, EA, NEA, id columns as these are not needed for clustering
   all_cols <- reactive({
-    all_complete_id() %>% select(-c("SNP", "EA", "NEA", "id"))
+    all_complete_id() %>% select(-c("SNP", "EA", "NEA", "Gene", "id"))
   })
   
   # Make all columns numeric 
