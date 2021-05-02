@@ -1,4 +1,4 @@
-# Dissertation
+# Research Project 
 This repository contains the code used in the application generated for Maya Gurkaran Dhaliwal's dissertation on "Producing an R Shiny Application to visualise the results of Genome-Wide Association Studies using Hierarchical Clustering."  
 
 The "HC_functions.R" file contains the functions required for the application to perform hierarchical clustering. 
