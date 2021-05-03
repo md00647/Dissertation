@@ -16,7 +16,9 @@ library(factoextra)
 library(shiny)
 
 ###LOAD IN CSV CONTAINING THE DATASETS SAVED ON COMPUTER AND THEIR PATHS
-Dataset_Paths <- read.csv("Datasets/Dataset_Paths.csv") 
+Dataset_Paths <- read.csv("Dataset_Paths.csv") 
+
+# Sort them alphabetically for ease of selection in the application
 Dataset_Paths <- Dataset_Paths[order(Dataset_Paths[,'Dataset_Names']), ]
 
 #UI PAGE ------------------------------------------------------------------------------------------------
@@ -31,21 +33,21 @@ ui <- fluidPage(
     # Sidebar panel for inputs ----
     sidebarPanel(
       tags$head(tags$style(".shiny-plot-output{height:100vh !important;}")), 
-      # Inputs for SNPs ----
+      # Inputs for SNPs 
       textInput("text_in", "Type in your desired SNPs, using their rsid, separated by commas with no space"),
       fileInput("file_in", "Upload SNP list as a csv file", multiple = FALSE),
-      #Datasets to choose from
+      # Key Dataset selection
       selectInput("data_in", "Key Dataset for Phenotype", choices = Dataset_Paths$Dataset_Names, multiple = FALSE),
-      #Datasets to choose from
+      # Datasets to compare against
       checkboxGroupInput("data_comp", "Comparison Datasets", choices = Dataset_Paths$Dataset_Names),
-      #If they want to remove SNPs with missing Z-Score or if they want to use Mean Imputation
+      # Dealing with missing data
       selectInput("miss", "How do you want to deal with Missingness?", choices = c("Mean_Imputation", "SNP_Removal"), selected = NULL),
-      #Generate Outputs
+      # Generate Outputs
       actionButton("go", "Generate Output"),
-      #Download Table Button
+      # Download Table Button
       downloadButton("dl", "Download your Summary Table"),
       downloadButton("dl2", "Download your HeatMap"),
-      #Reset Button
+      # Reset Button
       actionButton("ref", "Refresh Inputs")
     ), 
     
@@ -64,7 +66,7 @@ server <- function(input, output,session) {
   
   ###LOADING INPUTS### ----------------------------------------------------------------------------------------
   
-  #Text SNP Input
+  # Use Text SNP Input to generate a table containing all of the imputed ones
   snp_text <- reactive({
     
     inText <- input$text_in
@@ -77,7 +79,7 @@ server <- function(input, output,session) {
     return(textIn)
   })
   
-  #File SNP Input
+  # Use File SNP Input to generate a table containing all of the imputed ones
   snp_file <- reactive({
     
     inFile <- input$file_in
@@ -90,7 +92,7 @@ server <- function(input, output,session) {
     return(fullcsv)
   })
   
-  #Merge SNP inputs so we have all of the desired SNPs
+  # Merge SNP inputs so we have all of the desired SNPs
   snp_all <- reactive({
     rbind(snp_text(), snp_file()) %>% unique()
   })
