@@ -9,4 +9,6 @@ Note: In order to run the application, you will have to:
       (1) Install all of the packages using "install.packages()" before running the library() statements.
       (2) Produce a csv file named "Dataset_Paths" with 2 columns: "Dataset_Names" and "Path". In this file, you will have each phenotype dataset you could compare and 
       its corresponding file path in your computer. 
+      (3) Ensure that all of your datasets are aligned and follow this order of variables: SNP; EA; NEA; Dataset; Gene 
+   
       
